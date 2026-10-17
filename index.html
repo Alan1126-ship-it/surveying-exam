@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>丙級測量學科題庫與模擬測驗</title>
+  <style>
+    :root {
+      --primary: #1976d2;
+      --primary-dark: #115293;
+      --success: #2e7d32;
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
+      --text: #212529;
+      --text-muted: #6c757d;
+      --border: #dee2e6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding-bottom: 70px; }
+    
+    /* 頂部固定列 */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: #fff; border-bottom: 1px solid var(--border);
+      padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
+    }
+    header h1 { font-size: 1.05rem; font-weight: 700; color: var(--primary); }
+
+    /* 頁籤切換 */
+    .tabs {
+      display: flex; background: #fff; border-bottom: 1px solid var(--border);
+      position: sticky; top: 49px; z-index: 99;
+    }
+    .tab-btn {
+      flex: 1; padding: 12px 0; text-align: center; background: none; border: none;
+      font-size: 0.95rem; font-weight: 600; color: var(--text-muted); cursor: pointer;
+      border-bottom: 3px solid transparent; transition: all 0.2s;
+    }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    .container { padding: 14px; max-width: 680px; margin: 0 auto; }
+    .hidden { display: none !important; }
+
+    /* 密碼驗證鎖卡片 */
+    .lock-card {
+      background: #fff; padding: 24px 20px; border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06); text-align: center; margin-top: 40px;
+    }
+    .form-group { margin-bottom: 16px; text-align: left; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
+    .input-box {
+      width: 100%; padding: 12px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 1rem; outline: none;
+    }
+    .input-box:focus { border-color: var(--primary); }
+    .btn {
+      width: 100%; padding: 13px; background: var(--primary); color: #fff;
+      border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer;
+    }
+
+    /* 題目卡片 */
+    .q-card {
+      background: var(--card-bg); border-radius: 12px; padding: 16px;
+      margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid var(--border);
+    }
+    .q-meta { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; }
+    .q-tag { background: #e3f2fd; color: var(--primary); padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+    .q-title { font-size: 1rem; line-height: 1.5; font-weight: 600; margin-bottom: 12px; }
+    
+    /* 題目圖片適配與燈箱點擊 */
+    .q-img-wrap { text-align: center; margin-bottom: 12px; }
+    .q-img-wrap img {
+      max-width: 100%; max-height: 220px; border-radius: 6px; border: 1px solid var(--border);
+      cursor: zoom-in;
+    }
+
+    /* 選項設計（卡片式大按鈕，單手防誤觸） */
+    .opt-list { display: flex; flex-direction: column; gap: 8px; }
+    .opt-item {
+      padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 0.95rem; line-height: 1.4; display: flex; align-items: center;
+      cursor: pointer; transition: background 0.15s; -webkit-tap-highlight-color: transparent;
+    }
+    .opt-item.selected { border-color: var(--primary); background: #e3f2fd; font-weight: 600; }
+    .opt-item.correct { border-color: var(--success); background: #e8f5e9; color: var(--success); font-weight: 600; }
+    
+    /* 詳解區域 */
+    .exp-box {
+      margin-top: 12px; padding: 10px 12px; background: #fffde7;
+      border-left: 4px solid #fbc02d; font-size: 0.88rem; line-height: 1.45; border-radius: 4px;
+    }
+
+    /* 測驗底部導航列 */
+    .exam-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; background: #fff;
+      border-top: 1px solid var(--border); display: flex; justify-content: space-between;
+      align-items: center; padding: 10px 16px; z-index: 99;
+    }
+    .exam-timer { font-weight: 700; color: #d32f2f; font-size: 0.95rem; }
+
+    /* 圖片放大燈箱 */
+    .lightbox {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.88); z-index: 999; display: flex;
+      justify-content: center; align-items: center; padding: 12px;
+    }
+    .lightbox img { max-width: 95%; max-height: 90vh; border-radius: 8px; }
+  </style>
+</head>
+<body>
+
+  <!-- 通行密碼鎖畫面 -->
+  <div id="authScreen" class="container">
+    <div class="lock-card">
+      <h2 style="margin-bottom: 8px;">測量丙級複習與測驗</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">請輸入班級專用通行密碼開始使用</p>
+      <div class="form-group">
+        <input type="password" id="inputPass" class="input-box" placeholder="請輸入通行密碼">
+      </div>
+      <button class="btn" onclick="verifyPassword()">進入系統</button>
+      <p id="authMsg" style="color: #d32f2f; font-size: 0.85rem; margin-top: 10px;"></p>
+    </div>
+  </div>
+
+  <!-- 主系統（驗證通過後顯示） -->
+  <div id="mainScreen" class="hidden">
+    <header>
+      <h1>📐 丙級測量檢定專區</h1>
+      <span id="userStatus" style="font-size: 0.8rem; color: var(--text-muted);">隨身題庫模式</span>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('study')">📖 隨身題庫詳解</button>
+      <button class="tab-btn" onclick="switchTab('exam')">✍️ 全真模擬測驗</button>
+    </div>
+
+    <!-- 分頁 1：隨身題庫詳解 -->
+    <div id="studyView" class="container">
+      <div style="margin-bottom: 14px; display: flex; gap: 8px;">
+        <select id="catFilter" class="input-box" style="flex: 1;" onchange="renderStudyQuestions()">
+          <option value="ALL">全部工作項目</option>
+          <option value="基本學能">1. 基本學能</option>
+          <option value="距離測量">2. 距離測量</option>
+          <option value="高程測量">3. 高程測量</option>
+          <option value="角度測量">4. 角度測量</option>
+          <option value="基本繪圖">5. 基本繪圖</option>
+          <option value="埋石設標">6. 埋石設標</option>
+          <option value="儀器保養維護">7. 儀器保養維護</option>
+          <option value="測量基本準則">8. 測量基本準則</option>
+        </select>
+      </div>
+      <div id="studyList"></div>
+    </div>
+
+    <!-- 分頁 2：模擬測驗作答 -->
+    <div id="examView" class="container hidden">
+      <!-- 測驗前身分確認卡 -->
+      <div id="examInitCard" class="q-card" style="text-align: center;">
+        <h3 style="margin-bottom: 12px;">80 題全真學科模擬測驗</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+          測驗時間 100 分鐘，共 80 題單選題，採 100 分制（及格標準 60 分）。
+        </p>
+        <div class="form-group">
+          <label>學號</label>
+          <input type="text" id="stuId" class="input-box" placeholder="例：11204001">
+        </div>
+        <div class="form-group">
+          <label>姓名</label>
+          <input type="text" id="stuName" class="input-box" placeholder="例：王小明">
+        </div>
+        <button class="btn" onclick="startExam()">開始全真測驗</button>
+      </div>
+
+      <!-- 測驗作答介面 -->
+      <div id="examRunning" class="hidden">
+        <div id="examContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 測驗底部固定控制列 -->
+  <div id="examBar" class="exam-nav hidden">
+    <div id="examTimer" class="exam-timer">⏱️ 100:00</div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn" style="width: auto; padding: 8px 16px; background: #6c757d;" onclick="prevQuestion()">上一題</button>
+      <button id="nextBtn" class="btn" style="width: auto; padding: 8px 16px;" onclick="nextQuestion()">下一題</button>
+      <button id="submitBtn" class="btn hidden" style="width: auto; padding: 8px 16px; background: var(--success);" onclick="submitExam()">繳交試卷</button>
+    </div>
+  </div>
+
+  <!-- 點擊放大燈箱 -->
+  <div id="lightbox" class="lightbox hidden" onclick="this.classList.add('hidden')">
+    <img id="lightboxImg" src="" alt="放大檢視">
+  </div>
+
+  <!-- 引入題庫資料 -->
+  <script src="questions.js"></script>
+
+  <script>
+    const GAS_URL = "YOUR_GAS_WEB_APP_URL"; // 請貼上您的 GAS Web App 網址
+    let currentPass = "";
+    let examQuestions = [];
+    let currentExamIndex = 0;
+    let userAnswers = {};
+    let timerInterval = null;
+    let timeRemaining = 100 * 60; // 100分鐘
+    let examStartTime = null;
+
+    // 密碼驗證
+    async function verifyPassword() {
+      const pass = document.getElementById("inputPass").value.trim();
+      if (!pass) return;
+      document.getElementById("authMsg").innerText = "驗證中...";
+      try {
+        const res = await fetch(`${GAS_URL}?action=verify_student_pass&pass=${encodeURIComponent(pass)}`);
+        const json = await res.json();
+        if (json.status === "SUCCESS") {
+          currentPass = pass;
+          document.getElementById("authScreen").classList.add("hidden");
+          document.getElementById("mainScreen").classList.remove("hidden");
+          renderStudyQuestions();
+        } else {
+          document.getElementById("authMsg").innerText = "密碼錯誤，請洽指導教師";
+        }
+      } catch (e) {
+        document.getElementById("authMsg").innerText = "伺服器連線失敗，請檢查網路";
+      }
+    }
+
+    // 頁籤切換
+    function switchTab(tab) {
+      document.querySelectorAll(".tab-btn").forEach((b, idx) => {
+        b.classList.toggle("active", (tab === "study" && idx === 0) || (tab === "exam" && idx === 1));
+      });
+      document.getElementById("studyView").classList.toggle("hidden", tab !== "study");
+      document.getElementById("examView").classList.toggle("hidden", tab !== "exam");
+    }
+
+    // 隨身題庫渲染
+    function renderStudyQuestions() {
+      const cat = document.getElementById("catFilter").value;
+      const list = document.getElementById("studyList");
+      list.innerHTML = "";
+      const filtered = cat === "ALL" ? QUESTION_BANK : QUESTION_BANK.filter(q => q.category === cat);
+      
+      filtered.forEach((q, idx) => {
+        const card = document.createElement("div");
+        card.className = "q-card";
+        let imgHtml = q.image ? `<div class="q-img-wrap"><img src="${q.image}" onclick="zoomImg('${q.image}')" title="點擊放大"></div>` : "";
+        let optHtml = q.options.map((opt, oIdx) => `
+          <div class="opt-item ${oIdx === q.answer ? 'correct' : ''}">
+            ${oIdx + 1}. ${opt} ${oIdx === q.answer ? '✓ (正確答案)' : ''}
+          </div>
+        `).join("");
+
+        card.innerHTML = `
+          <div class="q-meta"><span class="q-tag">${q.category}</span><span>第 ${idx + 1} 題</span></div>
+          <div class="q-title">${q.question}</div>
+          ${imgHtml}
+          <div class="opt-list">${optHtml}</div>
+          <div class="exp-box"><strong>💡 試題詳解：</strong>${q.explanation || '暫無額外解析'}</div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    // 燈箱放大
+    function zoomImg(src) {
+      document.getElementById("lightboxImg").src = src;
+      document.getElementById("lightbox").classList.remove("hidden");
+    }
+
+    // 啟動全真模擬測驗（抽 80 題）
+    function startExam() {
+      const sid = document.getElementById("stuId").value.trim();
+      const sname = document.getElementById("stuName").value.trim();
+      if (!sid || !sname) {
+        alert("請完整填寫學號與姓名！");
+        return;
+      }
+      // 隨機抽選 80 題
+      const shuffled = [...QUESTION_BANK].sort(() => 0.5 - Math.random());
+      examQuestions = shuffled.slice(0, 80);
+      userAnswers = {};
+      currentExamIndex = 0;
+      examStartTime = new Date();
+
+      document.getElementById("examInitCard").classList.add("hidden");
+      document.getElementById("examRunning").classList.remove("hidden");
+      document.getElementById("examBar").classList.remove("hidden");
+
+      renderExamCurrentQuestion();
+      startTimer();
+    }
+
+    function renderExamCurrentQuestion() {
+      const q = examQuestions[currentExamIndex];
+      const container = document.getElementById("examContainer");
+      let imgHtml = q.image ? `<div class="q-img-wrap"><img src="${q.image}" onclick="zoomImg('${q.image}')"></div>` : "";
+      let optHtml = q.options.map((opt, oIdx) => `
+        <div class="opt-item ${userAnswers[currentExamIndex] === oIdx ? 'selected' : ''}" onclick="selectExamAnswer(${oIdx})">
+          ${oIdx + 1}. ${opt}
+        </div>
+      `).join("");
+
+      container.innerHTML = `
+        <div class="q-card">
+          <div class="q-meta"><span class="q-tag">${q.category}</span><span>第 ${currentExamIndex + 1} / ${examQuestions.length} 題</span></div>
+          <div class="q-title">${q.question}</div>
+          ${imgHtml}
+          <div class="opt-list">${optHtml}</div>
+        </div>
+      `;
+
+      // 按鈕狀態控制
+      document.getElementById("nextBtn").classList.toggle("hidden", currentExamIndex === examQuestions.length - 1);
+      document.getElementById("submitBtn").classList.toggle("hidden", currentExamIndex !== examQuestions.length - 1);
+    }
+
+    function selectExamAnswer(idx) {
+      userAnswers[currentExamIndex] = idx;
+      renderExamCurrentQuestion();
+    }
+
+    function prevQuestion() {
+      if (currentExamIndex > 0) {
+        currentExamIndex--;
+        renderExamCurrentQuestion();
+      }
+    }
+
+    function nextQuestion() {
+      if (currentExamIndex < examQuestions.length - 1) {
+        currentExamIndex++;
+        renderExamCurrentQuestion();
+      }
+    }
+
+    function startTimer() {
+      timeRemaining = 100 * 60;
+      timerInterval = setInterval(() => {
+        timeRemaining--;
+        if (timeRemaining <= 0) {
+          clearInterval(timerInterval);
+          alert("測驗時間已到，系統將自動交卷！");
+          submitExam();
+          return;
+        }
+        const m = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
+        const s = (timeRemaining % 60).toString().padStart(2, '0');
+        document.getElementById("examTimer").innerText = `⏱️ ${m}:${s}`;
+      }, 1000);
+    }
+
+    async function submitExam() {
+      clearInterval(timerInterval);
+      const answeredCount = Object.keys(userAnswers).length;
+      if (answeredCount < examQuestions.length) {
+        if (!confirm(`您還有 ${examQuestions.length - answeredCount} 題尚未作答，確定要交卷嗎？`)) {
+          return;
+        }
+      }
+
+      // 結算分數與 8 個工作項目得分率
+      const categories = ["基本學能", "距離測量", "高程測量", "角度測量", "基本繪圖", "埋石設標", "儀器保養維護", "測量基本準則"];
+      let stats = {};
+      categories.forEach(c => stats[c] = { total: 0, correct: 0 });
+
+      let correctCount = 0;
+      examQuestions.forEach((q, idx) => {
+        if (!stats[q.category]) stats[q.category] = { total: 0, correct: 0 };
+        stats[q.category].total++;
+        if (userAnswers[idx] === q.answer) {
+          correctCount++;
+          stats[q.category].correct++;
+        }
+      });
+
+      const totalScore = Math.round((correctCount / examQuestions.length) * 100);
+      const categoryScores = {};
+      categories.forEach(c => {
+        categoryScores[c] = stats[c].total > 0 ? Math.round((stats[c].correct / stats[c].total) * 100) : 100;
+      });
+
+      const durationMinutes = (new Date() - examStartTime) / 60000;
+
+      // 傳送成績至後端
+      const payload = {
+        action: "submit_exam",
+        pass: currentPass,
+        studentId: document.getElementById("stuId").value.trim(),
+        studentName: document.getElementById("stuName").value.trim(),
+        score: totalScore,
+        durationMinutes: durationMinutes,
+        categoryScores: categoryScores
+      };
+
+      document.getElementById("examContainer").innerHTML = `
+        <div class="q-card" style="text-align: center; padding: 30px;">
+          <h2>成績結算中，正在上傳紀錄...</h2>
+        </div>
+      `;
+
+      try {
+        await fetch(GAS_URL, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {}
+
+      document.getElementById("examBar").classList.add("hidden");
+      document.getElementById("examContainer").innerHTML = `
+        <div class="q-card" style="text-align: center; padding: 30px;">
+          <h2 style="color: ${totalScore >= 60 ? 'var(--success)' : '#d32f2f'}">${totalScore >= 60 ? '測驗合格' : '未達及格標準'}</h2>
+          <div style="font-size: 2.5rem; font-weight: 800; margin: 16px 0;">${totalScore} 分</div>
+          <p style="color: var(--text-muted); margin-bottom: 20px;">答對題數：${correctCount} / ${examQuestions.length} 題（作答耗時：${durationMinutes.toFixed(1)} 分鐘）</p>
+          <button class="btn" onclick="location.reload()">返回首頁</button>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
